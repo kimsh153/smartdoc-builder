@@ -35,7 +35,8 @@ export function PreviewPanel() {
   return (
     <div className="flex justify-center p-8">
       {/* A4 문서 */}
-      <div 
+      <div
+        id="document-preview"
         className="w-full max-w-[210mm] min-h-[297mm] bg-white p-12 shadow-lg font-serif text-[14px] leading-relaxed"
         style={{
           boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.05)',

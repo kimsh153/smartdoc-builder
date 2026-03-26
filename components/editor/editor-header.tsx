@@ -55,8 +55,25 @@ export function EditorHeader() {
     }
   }
 
-  const handleDownload = () => {
-    toast.info('PDF 다운로드 기능은 준비 중입니다')
+  const handleDownload = async () => {
+    const element = document.getElementById('document-preview')
+    if (!element) return
+
+    const html2pdf = (await import('html2pdf.js')).default
+    const filename = `${selectedTemplate?.name || '문서'}_${new Date().toISOString().slice(0, 10)}.pdf`
+
+    toast.info('PDF 생성 중...')
+    await html2pdf()
+      .set({
+        margin: 0,
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      })
+      .from(element)
+      .save()
+    toast.success('PDF가 다운로드되었습니다')
   }
 
   return (
