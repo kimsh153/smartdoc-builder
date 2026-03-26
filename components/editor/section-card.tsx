@@ -3,8 +3,8 @@
 import { useDocumentStore } from '@/lib/store'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { RichTextarea } from '@/components/editor/rich-textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -104,10 +104,10 @@ function FieldInput({ field, value, onChange }: FieldInputProps) {
       )}
 
       {field.type === 'textarea' && (
-        <Textarea
+        <RichTextarea
           id={field.id}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
           placeholder={field.placeholder}
           rows={4}
         />
