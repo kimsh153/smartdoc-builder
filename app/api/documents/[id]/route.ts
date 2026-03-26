@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { Document } from '@/lib/types'
+import { z } from 'zod'
+import { documents } from '@/lib/api-store'
 
-// 인메모리 스토어 참조 (documents/route.ts와 동일 모듈 범위 공유 불가 → 독립 Map)
-// 추후 DB 레이어로 교체 시 이 Map을 제거하면 됩니다.
-const documents: Map<string, Document> = new Map()
+const PutBodySchema = z.object({
+  values: z.record(z.string()).optional(),
+  status: z.enum(['draft', 'reviewed', 'confirmed']).optional(),
+})
 
 export async function GET(
   _request: NextRequest,
@@ -27,10 +29,17 @@ export async function PUT(
     return NextResponse.json({ error: '문서를 찾을 수 없습니다.' }, { status: 404 })
   }
 
-  const body = await request.json()
-  const { values, status } = body
+  const raw = await request.json()
+  const parsed = PutBodySchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: '잘못된 요청입니다.', details: parsed.error.flatten() },
+      { status: 400 }
+    )
+  }
+  const { values, status } = parsed.data
 
-  const updated: Document = {
+  const updated = {
     ...existing,
     ...(values !== undefined && { values }),
     ...(status !== undefined && { status }),

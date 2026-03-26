@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { Document } from '@/lib/types'
-
-// 인메모리 스토어 (추후 DB로 교체)
-const documents: Map<string, Document> = new Map()
+import type { Document as AppDocument } from '@/lib/types'
+import { documents } from '@/lib/api-store'
 
 export async function GET() {
   const list = Array.from(documents.values()).sort(
@@ -22,7 +20,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const newDoc: Document = {
+  const newDoc: AppDocument = {
     id: crypto.randomUUID(),
     templateId,
     templateName,

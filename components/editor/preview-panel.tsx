@@ -3,22 +3,31 @@
 import { useMemo } from 'react'
 import { useDocumentStore } from '@/lib/store'
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 export function PreviewPanel() {
   const { selectedTemplate, values } = useDocumentStore()
 
   const renderedContent = useMemo(() => {
     if (!selectedTemplate) return ''
-    
+
     let content = selectedTemplate.documentContent
-    
+
     // {{fieldId}} 패턴을 찾아서 값으로 교체
     const placeholderRegex = /\{\{(\w+)\}\}/g
-    
+
     content = content.replace(placeholderRegex, (match, fieldId) => {
       const value = values[fieldId]
       if (value) {
-        // 입력된 값은 볼드 + 밑줄로 표시
-        return `<span class="font-bold underline underline-offset-2">${value}</span>`
+        // 입력된 값은 볼드 + 밑줄로 표시 (XSS 방지를 위해 HTML 이스케이프)
+        return `<span class="font-bold underline underline-offset-2">${escapeHtml(value)}</span>`
       }
       // 미입력 필드는 밑줄로 표시
       return '<span class="text-muted-foreground">ㅡㅡㅡㅡ</span>'

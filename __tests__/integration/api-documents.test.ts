@@ -11,7 +11,7 @@ import { NextRequest } from 'next/server'
 
 // Helper: build a NextRequest with optional JSON body
 function makeRequest(method: string, url: string, body?: unknown): NextRequest {
-  const init: RequestInit = { method }
+  const init: { method: string; body?: string; headers?: Record<string, string> } = { method }
   if (body !== undefined) {
     init.body = JSON.stringify(body)
     init.headers = { 'Content-Type': 'application/json' }
