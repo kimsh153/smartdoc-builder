@@ -6,6 +6,7 @@ import { useDocumentStore } from '@/lib/store'
 import { InputPanel } from '@/components/editor/input-panel'
 import { PreviewPanel } from '@/components/editor/preview-panel'
 import { EditorHeader } from '@/components/editor/editor-header'
+import { ReviewDialog } from '@/components/editor/review-dialog'
 
 export default function EditorPage() {
   const router = useRouter()
@@ -34,6 +35,7 @@ export default function EditorPage() {
           <PreviewPanel />
         </div>
       </div>
+      <ReviewDialog />
     </div>
   )
 }

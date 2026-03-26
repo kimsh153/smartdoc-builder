@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useDocumentStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
@@ -9,7 +8,7 @@ import { toast } from 'sonner'
 
 export function EditorHeader() {
   const router = useRouter()
-  const { selectedTemplate, saveDocument, reset, setIsReviewing } = useDocumentStore()
+  const { selectedTemplate, values, saveDocument, reset, isReviewing, setIsReviewing, setReviewResult } = useDocumentStore()
 
   const handleSave = () => {
     saveDocument()
@@ -21,10 +20,39 @@ export function EditorHeader() {
     router.push('/')
   }
 
-  const handleReview = () => {
+  const handleReview = async () => {
+    if (!selectedTemplate) return
+
+    const fields = selectedTemplate.sections
+      .flatMap((s) => s.fields)
+      .filter((f) => (f.type === 'text' || f.type === 'textarea') && values[f.id]?.trim())
+      .map((f) => ({ id: f.id, label: f.label, value: values[f.id] }))
+
+    if (fields.length === 0) {
+      toast.warning('검토할 텍스트 필드를 먼저 입력해주세요')
+      return
+    }
+
     setIsReviewing(true)
-    // AI 검토 로직은 추후 구현
-    toast.info('AI 검토 기능은 준비 중입니다')
+    try {
+      const res = await fetch('/api/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields }),
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || 'AI 검토 요청 실패')
+      }
+
+      const result = await res.json()
+      setReviewResult(result)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'AI 검토 중 오류가 발생했습니다')
+    } finally {
+      setIsReviewing(false)
+    }
   }
 
   const handleDownload = () => {
@@ -48,9 +76,9 @@ export function EditorHeader() {
           <Save className="mr-2 h-4 w-4" />
           저장
         </Button>
-        <Button variant="outline" size="sm" onClick={handleReview}>
+        <Button variant="outline" size="sm" onClick={handleReview} disabled={isReviewing}>
           <Sparkles className="mr-2 h-4 w-4" />
-          AI 검토
+          {isReviewing ? 'AI 검토 중...' : 'AI 검토'}
         </Button>
         <Button size="sm" onClick={handleDownload}>
           <Download className="mr-2 h-4 w-4" />
