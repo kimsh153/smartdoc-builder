@@ -77,18 +77,18 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-011] PDF 다운로드 기능 (html2pdf.js 기반)
 - [TASK-012] 단위/통합 테스트 작성 (Jest + Testing Library)
 - [TASK-013] 코드 리뷰, 리팩토링, 문서화 완료
+- [TASK-014] AI 품질 개선 — gpt-4o 업그레이드 및 프롬프트 최적화 (templates/analyze, review, claudeParser)
+  - 토큰 비용 참고: gpt-4o-mini 대비 gpt-4o는 입력 ~15배, 출력 ~15배 비용 증가. 복잡한 문서 분석 기준 요청당 약 $0.01~0.05 예상.
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
 - 파일 업로드 → 템플릿 자동 생성 기능 (app/upload/, app/parse/ 페이지 존재하나 완성도 미확인)
 - DynamicForm.tsx, UploadZone.tsx 통합 완성도 확인 필요
-- [#14](https://github.com/kimsh153/smartdoc-builder/issues/14) AI 품질 개선 — 모델 업그레이드(gpt-4o-mini → gpt-4o) 및 프롬프트 최적화
 - [#15](https://github.com/kimsh153/smartdoc-builder/issues/15) 문서 읽기(parse) AI 품질 개선 — claudeParser 프롬프트 강화 및 모델 업그레이드
 - [#16](https://github.com/kimsh153/smartdoc-builder/issues/16) [TASK-016] 문서 파싱·리뷰 AI 품질 개선 실구현 — 모델 업그레이드(gpt-4o-mini→gpt-4o) 및 프롬프트 재작성 (#14,#15 구현)
 
 ## 🔧 In Progress
 <!-- Dev Agent가 작업 중인 이슈. Dev Agent가 업데이트 -->
-- [#14](https://github.com/kimsh153/smartdoc-builder/issues/14) AI 품질 개선 구현 중 — gpt-4o-mini → gpt-4o 업그레이드, 프롬프트 개선 (templates/analyze, review, claudeParser)
 
 ## ⚠️ QA Failed
 <!-- QA FAIL 후 재작업 대기. QA Agent가 업데이트 -->
