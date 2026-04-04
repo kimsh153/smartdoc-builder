@@ -79,13 +79,14 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-013] 코드 리뷰, 리팩토링, 문서화 완료
 - [TASK-014] AI 품질 개선 — gpt-4o 업그레이드 및 프롬프트 최적화 (templates/analyze, review, claudeParser)
   - 토큰 비용 참고: gpt-4o-mini 대비 gpt-4o는 입력 ~15배, 출력 ~15배 비용 증가. 복잡한 문서 분석 기준 요청당 약 $0.01~0.05 예상.
+- [TASK-016] 문서 파싱·리뷰 AI 품질 개선 — claudeParser PARSE_SYSTEM_PROMPT 재작성 (documentType 6종 확장, confidence 임계값 명시, fixedStructure 동적 추출)
+- [TASK-017] 문서 파싱 AI 품질 불량 진단 및 개선 완료 (#16과 동일 변경, 63a79c8)
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
 - 파일 업로드 → 템플릿 자동 생성 기능 (app/upload/, app/parse/ 페이지 존재하나 완성도 미확인)
 - DynamicForm.tsx, UploadZone.tsx 통합 완성도 확인 필요
 - [#15](https://github.com/kimsh153/smartdoc-builder/issues/15) 문서 읽기(parse) AI 품질 개선 — claudeParser 프롬프트 강화 및 모델 업그레이드
-- [#16](https://github.com/kimsh153/smartdoc-builder/issues/16) [TASK-016] 문서 파싱·리뷰 AI 품질 개선 실구현 — 모델 업그레이드(gpt-4o-mini→gpt-4o) 및 프롬프트 재작성 (#14,#15 구현)
 
 ## 🔧 In Progress
 <!-- Dev Agent가 작업 중인 이슈. Dev Agent가 업데이트 -->
