@@ -83,11 +83,10 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-017] 문서 파싱 AI 품질 불량 진단 및 개선 완료 (#16과 동일 변경, 63a79c8)
 - [TASK-018] 계약서 AI 분석 조항 누락 버그 수정 — TEXT_SYSTEM_PROMPT/HTML_SYSTEM_PROMPT/CONTRACT_HTML_GUIDE에 원문 전체 보존 강제 규칙 추가, JSON_SCHEMA clauseIndex 필드 추가, 조항 수 불일치 경고 로직, max_tokens 확대 (3fcc687)
 - [TASK-019] 계약서 당사자 명칭·문구 원문 verbatim 보존 강제 — CONTRACT_HTML_GUIDE 갑/을 하드코딩 제거·동적 플레이스홀더 교체, HTML_SYSTEM_PROMPT/TEXT_SYSTEM_PROMPT verbatim 보존 규칙 추가, JSON_SCHEMA party_a_label/party_b_label 필드 추가, claudeParser PARSE_SYSTEM_PROMPT 당사자 명칭 보존 규칙 추가 (b4f5273)
+- [TASK-020] 업로드→파싱→에디터 통합 플로우 완성 — types/document.ts documentType 6종 확장, schemaToTemplate() 변환 브릿지 구현, DynamicForm onSubmit+버튼 추가, /parse Step 3 에디터 이동 CTA 연결, 대시보드 진입점 레이블 명확화 (31be80e)
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
-- 파일 업로드 → 템플릿 자동 생성 기능 (app/upload/, app/parse/ 페이지 존재하나 완성도 미확인)
-- DynamicForm.tsx, UploadZone.tsx 통합 완성도 확인 필요
 
 ## 🔧 In Progress
 <!-- Dev Agent가 작업 중인 이슈. Dev Agent가 업데이트 -->
