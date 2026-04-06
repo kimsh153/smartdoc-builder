@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import type { TemplateSchema } from '@/types/document'
+import type { Template, DocumentType, FieldType } from '@/lib/types'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -62,6 +63,74 @@ confidence 임계값 기준:
 - variableFields에 party_a_label(당사자 A 명칭)과 party_b_label(당사자 B 명칭)을 포함할 것
 - 조항 본문 문구 재작성(paraphrase), 의역, 축약 절대 금지
 `
+
+const DOC_TYPE_ICON: Record<string, string> = {
+  quotation: '💰',
+  proposal: '📋',
+  contract: '📝',
+  report: '📊',
+  minutes: '📅',
+  unknown: '📄',
+}
+
+const DOC_TYPE_LABEL: Record<string, string> = {
+  quotation: '견적서',
+  proposal: '제안서',
+  contract: '계약서',
+  report: '보고서',
+  minutes: '회의록',
+  unknown: '문서',
+}
+
+const SCHEMA_TO_FIELD_TYPE: Record<string, FieldType> = {
+  text: 'text',
+  number: 'number',
+  date: 'date',
+  currency: 'number',
+  table: 'textarea',
+}
+
+const SCHEMA_TO_DOC_TYPE: Record<string, DocumentType | undefined> = {
+  quotation: 'quotation',
+  proposal: 'proposal',
+  contract: 'contract',
+  report: undefined,
+  minutes: undefined,
+  unknown: undefined,
+}
+
+export function schemaToTemplate(schema: TemplateSchema): Template {
+  const id = `parsed-${Date.now()}`
+  const docTypeLabel = DOC_TYPE_LABEL[schema.documentType] ?? '문서'
+  const icon = DOC_TYPE_ICON[schema.documentType] ?? '📄'
+  const docType = SCHEMA_TO_DOC_TYPE[schema.documentType]
+
+  const fields = schema.variableFields.map((f) => ({
+    id: f.id,
+    label: f.label,
+    type: SCHEMA_TO_FIELD_TYPE[f.type] ?? 'text',
+    placeholder: f.placeholder,
+    required: f.required,
+  }))
+
+  const sections = [{ id: 'main', title: '기본 정보', fields }]
+
+  const contentLines = [
+    schema.title,
+    '',
+    ...schema.variableFields.map((f) => `${f.label}: {{${f.id}}}`),
+  ]
+
+  return {
+    id,
+    name: schema.title || docTypeLabel,
+    description: `AI가 분석한 ${docTypeLabel} 템플릿 (신뢰도 ${Math.round(schema.confidence * 100)}%)`,
+    icon,
+    ...(docType ? { documentType: docType } : {}),
+    sections,
+    documentContent: contentLines.join('\n'),
+  }
+}
 
 export async function parseDocumentWithClaude(
   text: string,
