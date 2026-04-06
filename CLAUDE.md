@@ -81,6 +81,7 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
   - 토큰 비용 참고: gpt-4o-mini 대비 gpt-4o는 입력 ~15배, 출력 ~15배 비용 증가. 복잡한 문서 분석 기준 요청당 약 $0.01~0.05 예상.
 - [TASK-016] 문서 파싱·리뷰 AI 품질 개선 — claudeParser PARSE_SYSTEM_PROMPT 재작성 (documentType 6종 확장, confidence 임계값 명시, fixedStructure 동적 추출)
 - [TASK-017] 문서 파싱 AI 품질 불량 진단 및 개선 완료 (#16과 동일 변경, 63a79c8)
+- [TASK-018] 계약서 AI 분석 조항 누락 버그 수정 — TEXT_SYSTEM_PROMPT/HTML_SYSTEM_PROMPT/CONTRACT_HTML_GUIDE에 원문 전체 보존 강제 규칙 추가, JSON_SCHEMA clauseIndex 필드 추가, 조항 수 불일치 경고 로직, max_tokens 확대 (3fcc687)
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
