@@ -49,6 +49,12 @@ confidence 임계값 기준:
 - 프로젝트마다 달라지는 값: 프로젝트명, 범위, 금액, 조건
 - 날짜: 견적일, 유효기간, 납기일, 계약일, 회의일
 고정 구조: 회사 로고, 은행 계좌, 세금 계산 방식, 표준 조항, 양식 레이아웃
+
+⚠️ 원문 전체 추출 필수 규칙:
+- 문서의 모든 조항/항목을 빠짐없이 추출할 것 — 요약·축약·생략 절대 금지
+- 계약서의 경우 제1조부터 마지막 조항까지 모든 조항을 variableFields에 반영할 것
+- 조항 번호·순서를 원문 그대로 유지할 것
+- 내용이 길더라도 잘라내거나 "등" 으로 축약하지 말 것
 `
 
 export async function parseDocumentWithClaude(
@@ -86,7 +92,7 @@ export async function parseDocumentWithClaude(
     ],
     response_format: { type: 'json_object' },
     temperature: 0.3,
-    max_tokens: 4000,
+    max_tokens: 6000,
   })
 
   const raw = completion.choices[0]?.message?.content ?? ''

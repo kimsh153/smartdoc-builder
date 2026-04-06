@@ -95,6 +95,13 @@ const CONTRACT_HTML_GUIDE = `
 
 실제 계약서처럼 정갈한 공문서 스타일. 마크다운(##, **, - 불릿 등) 절대 금지.
 
+⚠️ 계약서 원문 보존 절대 규칙 (반드시 준수):
+- 원문의 모든 조항(제1조, 제2조, ... 제N조)을 빠짐없이 포함할 것
+- 내용 요약, 축약, 병합, 생략 절대 금지 — 조항 하나도 누락 불가
+- 조항 번호·제목·본문을 원문 순서 그대로 유지할 것
+- 원문에 조항이 N개이면 반드시 N개의 <div class="doc-section">을 생성할 것
+- 각 조항의 세부 항목(①②③ 또는 1.2.3. 등)도 모두 포함할 것
+
 <h1 class="doc-title">용역계약서</h1>
 <p class="doc-intro">멜리언스(이하 '갑')와 수호(이하 '을')는 다음과 같이 계약을 체결한다.</p>
 
@@ -112,6 +119,8 @@ const CONTRACT_HTML_GUIDE = `
   <p class="doc-body">본문...</p>
 </div>
 
+<!-- 원문의 모든 조항을 위와 같은 형식으로 순서대로 모두 포함 -->
+
 <div class="doc-signature">
   <p class="doc-sign-date">{{contract_date}}</p>
   <div class="doc-sign-row">
@@ -125,6 +134,7 @@ const CONTRACT_HTML_GUIDE = `
 - 조항 제목은 <h2 class="doc-section-title">
 - 본문은 <p class="doc-body">, 목록은 <ol class="doc-list"><li>
 - 표가 필요하면 <table class="doc-table">
+- 원문 조항 수와 생성된 <div class="doc-section"> 수가 반드시 일치해야 함
 `
 
 // ── 견적서 HTML 구조 ──
@@ -288,13 +298,19 @@ const JSON_SCHEMA = `
           "label": "string (한국어 질문형)",
           "type": "text | textarea | date | number | select | radio",
           "placeholder": "string",
-          "required": true | false
+          "required": true | false,
+          "clauseIndex": "number | null (계약서 조항 번호. 제3조이면 3, 해당없으면 null)"
         }
       ]
     }
   ],
   "documentContent": "string (아래 HTML 구조 규칙 준수 + {{fieldId}} 치환. JSON 문자열이므로 따옴표 이스케이프)"
 }
+
+⚠️ 계약서(contract) 필드 생성 규칙 — 원문 보존 필수:
+- 원문 조항 수와 동일한 수의 field 또는 section을 생성할 것 (조항 1개 = field 또는 section 1개 이상)
+- 요약·축약·병합·생략 절대 금지 — 원문의 모든 조항 내용을 fields와 documentContent에 반영
+- clauseIndex 필드로 원문 조항 번호를 추적할 것 (제3조 → clauseIndex: 3)
 
 documentType 판별 기준 및 few-shot 예시:
 
@@ -335,6 +351,12 @@ const HTML_SYSTEM_PROMPT = `당신은 비즈니스 문서를 분석하여 재사
 6. type은 내용에 맞게 선택: text, textarea, date, number, select, radio.
 7. documentType을 정확히 판별한 뒤, 해당 타입의 HTML 구조를 사용합니다.
 
+⚠️ 원문 보존 강제 규칙 (모든 documentType에 적용):
+- 원문의 모든 조항/항목/섹션을 빠짐없이 포함할 것 — 내용 요약·축약·병합·생략 절대 금지
+- 조항 번호·제목·본문을 원문 순서 그대로 유지할 것
+- 원문에 조항이 N개이면 documentContent에 반드시 N개의 섹션/조항 블록을 생성할 것
+- 계약서의 경우 각 조항의 세부 항목(①②③ 등)도 모두 포함할 것
+
 ${CONTRACT_HTML_GUIDE}
 
 ${QUOTATION_HTML_GUIDE}
@@ -358,6 +380,13 @@ const TEXT_SYSTEM_PROMPT = `당신은 비즈니스 문서를 분석하여 재사
 7. 모든 label은 한국어 질문 형식으로 작성합니다.
 8. type은 내용에 맞게 선택: text, textarea, date, number, select, radio.
 9. documentType을 정확히 판별한 뒤, 해당 타입의 HTML 구조를 사용합니다.
+
+⚠️ 원문 보존 강제 규칙 (모든 documentType에 적용):
+- 원문의 모든 조항/항목/섹션을 빠짐없이 포함할 것 — 내용 요약·축약·병합·생략 절대 금지
+- 조항 번호·제목·본문을 원문 순서 그대로 유지할 것
+- 원문에 조항이 N개이면 documentContent에 반드시 N개의 섹션/조항 블록을 생성할 것
+- 계약서의 경우 각 조항(제1조~제N조)을 모두 개별 <div class="doc-section">으로 생성할 것
+- 각 조항의 세부 항목(①②③ 또는 1.2.3. 등)도 모두 포함할 것
 
 ${CONTRACT_HTML_GUIDE}
 
@@ -474,7 +503,7 @@ export async function POST(request: NextRequest) {
       ],
       response_format: { type: 'json_object' },
       temperature: 0.3,
-      max_tokens: 4000,
+      max_tokens: 8000,
     })
 
     const content = completion.choices[0]?.message?.content
@@ -486,6 +515,23 @@ export async function POST(request: NextRequest) {
     }
 
     const parsed = parseTemplate(content)
+
+    // 계약서 조항 수 불일치 경고
+    if (parsed.documentType === 'contract') {
+      const originalClauseCount = (truncated.match(/제\d+조/g) ?? []).length
+      const generatedFieldCount = (parsed.sections ?? []).reduce(
+        (sum: number, s: { fields?: unknown[] }) => sum + (s.fields?.length ?? 0),
+        0
+      )
+      if (
+        originalClauseCount > 0 &&
+        generatedFieldCount < originalClauseCount * 0.8
+      ) {
+        console.warn(
+          `[/api/templates/analyze] ⚠️ 계약서 조항 수 불일치: 원문 ${originalClauseCount}개 조항, 생성된 필드 ${generatedFieldCount}개 (기준: 원문의 80% 미만)`
+        )
+      }
+    }
 
     if (
       !parsed.id ||
