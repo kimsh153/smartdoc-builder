@@ -88,8 +88,6 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
 - 파일 업로드 → 템플릿 자동 생성 기능 (app/upload/, app/parse/ 페이지 존재하나 완성도 미확인)
 - DynamicForm.tsx, UploadZone.tsx 통합 완성도 확인 필요
-- [#15](https://github.com/kimsh153/smartdoc-builder/issues/15) 문서 읽기(parse) AI 품질 개선 — claudeParser 프롬프트 강화 및 모델 업그레이드
-- [#18](https://github.com/kimsh153/smartdoc-builder/issues/18) 계약서 AI 분석 시 조항 누락 — 원문 전체(13개) 보존 없이 4~5개로 축약됨
 
 ## 🔧 In Progress
 <!-- Dev Agent가 작업 중인 이슈. Dev Agent가 업데이트 -->
