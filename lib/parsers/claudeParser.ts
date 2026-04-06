@@ -55,6 +55,12 @@ confidence 임계값 기준:
 - 계약서의 경우 제1조부터 마지막 조항까지 모든 조항을 variableFields에 반영할 것
 - 조항 번호·순서를 원문 그대로 유지할 것
 - 내용이 길더라도 잘라내거나 "등" 으로 축약하지 말 것
+
+⚠️ 당사자 명칭 verbatim 보존 규칙 (계약서에 필수):
+- 원문의 당사자 명칭(위탁자/수탁자, 도급인/수급인, 갑/을 등)을 임의로 변경 절대 금지
+- 원문이 '위탁자'이면 '위탁자', '갑'이면 '갑' — AI가 임의로 다른 명칭으로 치환 불가
+- variableFields에 party_a_label(당사자 A 명칭)과 party_b_label(당사자 B 명칭)을 포함할 것
+- 조항 본문 문구 재작성(paraphrase), 의역, 축약 절대 금지
 `
 
 export async function parseDocumentWithClaude(

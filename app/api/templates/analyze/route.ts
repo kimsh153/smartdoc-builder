@@ -102,21 +102,29 @@ const CONTRACT_HTML_GUIDE = `
 - 원문에 조항이 N개이면 반드시 N개의 <div class="doc-section">을 생성할 것
 - 각 조항의 세부 항목(①②③ 또는 1.2.3. 등)도 모두 포함할 것
 
-<h1 class="doc-title">용역계약서</h1>
-<p class="doc-intro">멜리언스(이하 '갑')와 수호(이하 '을')는 다음과 같이 계약을 체결한다.</p>
+⚠️ 당사자 명칭 원문 보존 절대 규칙 (반드시 준수):
+- 원문의 당사자 명칭(위탁자/수탁자, 도급인/수급인, 갑/을 등)을 임의로 변경 절대 금지
+- 원문이 '위탁자'이면 '위탁자', '갑'이면 '갑' — AI가 임의로 다른 명칭으로 치환 불가
+- doc-intro, 조항 본문 등 모든 위치에서 원문 당사자 명칭을 그대로 사용할 것
+- 서명란의 당사자 레이블도 {{party_a_label}}, {{party_b_label}} 필드로 동적 처리
+- 조항 본문 문구 재작성(paraphrase), 의역, 축약, 재배치 절대 금지 — 원문 한 글자도 바꾸지 말 것
+
+<!-- 예시: 원문이 '위탁자'/'수탁자' 계약서인 경우 -->
+<h1 class="doc-title">{{contract_title}}</h1>
+<p class="doc-intro">{{party_a}}(이하 '{{party_a_label}}')와 {{party_b}}(이하 '{{party_b_label}}')는 다음과 같이 계약을 체결한다.</p>
 
 <div class="doc-section">
   <h2 class="doc-section-title">제1조(계약의 목적)</h2>
-  <p class="doc-body">본 계약은 '갑'이 필요로 하는 업무를 '을'에게 위탁하여 수행하도록 함에 있어, 필요한 사항을 정하는 것을 목적으로 한다.</p>
+  <p class="doc-body"><!-- 원문 조항 본문을 한 글자도 바꾸지 않고 그대로 복사 --></p>
   <ol class="doc-list">
-    <li>항목 내용...</li>
-    <li>항목 내용...</li>
+    <li><!-- 원문 세부 항목 그대로 복사 --></li>
+    <li><!-- 원문 세부 항목 그대로 복사 --></li>
   </ol>
 </div>
 
 <div class="doc-section">
   <h2 class="doc-section-title">제2조(계약 당사자)</h2>
-  <p class="doc-body">본문...</p>
+  <p class="doc-body"><!-- 원문 본문 그대로 복사 --></p>
 </div>
 
 <!-- 원문의 모든 조항을 위와 같은 형식으로 순서대로 모두 포함 -->
@@ -124,8 +132,8 @@ const CONTRACT_HTML_GUIDE = `
 <div class="doc-signature">
   <p class="doc-sign-date">{{contract_date}}</p>
   <div class="doc-sign-row">
-    <div class="doc-sign-box"><strong>갑</strong><br/>{{party_a}}&nbsp;&nbsp;&nbsp;(인)</div>
-    <div class="doc-sign-box"><strong>을</strong><br/>{{party_b}}&nbsp;&nbsp;&nbsp;(인)</div>
+    <div class="doc-sign-box"><strong>{{party_a_label}}</strong><br/>{{party_a}}&nbsp;&nbsp;&nbsp;(인)</div>
+    <div class="doc-sign-box"><strong>{{party_b_label}}</strong><br/>{{party_b}}&nbsp;&nbsp;&nbsp;(인)</div>
   </div>
 </div>
 
@@ -135,6 +143,7 @@ const CONTRACT_HTML_GUIDE = `
 - 본문은 <p class="doc-body">, 목록은 <ol class="doc-list"><li>
 - 표가 필요하면 <table class="doc-table">
 - 원문 조항 수와 생성된 <div class="doc-section"> 수가 반드시 일치해야 함
+- 원문 당사자 명칭을 반드시 {{party_a_label}}, {{party_b_label}} 필드로 추적하여 서명란에 반영
 `
 
 // ── 견적서 HTML 구조 ──
@@ -304,13 +313,24 @@ const JSON_SCHEMA = `
       ]
     }
   ],
-  "documentContent": "string (아래 HTML 구조 규칙 준수 + {{fieldId}} 치환. JSON 문자열이므로 따옴표 이스케이프)"
+  "documentContent": "string (아래 HTML 구조 규칙 준수 + {{fieldId}} 치환. JSON 문자열이므로 따옴표 이스케이프)",
+  "party_a_label": "string | null (계약서 원문 당사자 A 명칭 — 예: '위탁자', '갑', '도급인'. 계약서 외에는 null)",
+  "party_b_label": "string | null (계약서 원문 당사자 B 명칭 — 예: '수탁자', '을', '수급인'. 계약서 외에는 null)"
 }
 
 ⚠️ 계약서(contract) 필드 생성 규칙 — 원문 보존 필수:
 - 원문 조항 수와 동일한 수의 field 또는 section을 생성할 것 (조항 1개 = field 또는 section 1개 이상)
 - 요약·축약·병합·생략 절대 금지 — 원문의 모든 조항 내용을 fields와 documentContent에 반영
 - clauseIndex 필드로 원문 조항 번호를 추적할 것 (제3조 → clauseIndex: 3)
+- party_a_label, party_b_label 필드를 반드시 포함할 것 (원문 당사자 명칭 추적)
+  - 원문이 '위탁자'/'수탁자'이면: party_a_label: "위탁자", party_b_label: "수탁자"
+  - 원문이 '갑'/'을'이면: party_a_label: "갑", party_b_label: "을"
+  - 원문이 '도급인'/'수급인'이면: party_a_label: "도급인", party_b_label: "수급인"
+
+⚠️ 계약서(contract) 당사자 명칭 verbatim 보존 규칙:
+- documentContent의 고정 텍스트(조항 제목·본문)는 원문을 한 글자도 바꾸지 않고 그대로 복사할 것
+- 당사자 명칭(위탁자/수탁자, 도급인/수급인 등)을 임의의 다른 명칭으로 치환 절대 금지
+- 문장 재작성(paraphrase), 의역, 축약, 재배치 절대 금지
 
 documentType 판별 기준 및 few-shot 예시:
 
@@ -357,6 +377,13 @@ const HTML_SYSTEM_PROMPT = `당신은 비즈니스 문서를 분석하여 재사
 - 원문에 조항이 N개이면 documentContent에 반드시 N개의 섹션/조항 블록을 생성할 것
 - 계약서의 경우 각 조항의 세부 항목(①②③ 등)도 모두 포함할 것
 
+⚠️ 당사자 명칭 및 조항 문구 verbatim 보존 규칙 (계약서에 필수):
+- documentContent의 고정 텍스트(조항 제목·본문)는 원문을 한 글자도 바꾸지 않고 그대로 복사할 것
+- 당사자 명칭(위탁자/수탁자, 도급인/수급인 등)을 임의의 다른 명칭으로 치환 절대 금지
+- 원문이 '위탁자'이면 '위탁자', '갑'이면 '갑' — AI가 임의로 변환 불가
+- 문장 재작성(paraphrase), 의역, 축약, 재배치 절대 금지
+- 원문 당사자 명칭을 party_a_label, party_b_label 필드에 반드시 기록할 것
+
 ${CONTRACT_HTML_GUIDE}
 
 ${QUOTATION_HTML_GUIDE}
@@ -387,6 +414,13 @@ const TEXT_SYSTEM_PROMPT = `당신은 비즈니스 문서를 분석하여 재사
 - 원문에 조항이 N개이면 documentContent에 반드시 N개의 섹션/조항 블록을 생성할 것
 - 계약서의 경우 각 조항(제1조~제N조)을 모두 개별 <div class="doc-section">으로 생성할 것
 - 각 조항의 세부 항목(①②③ 또는 1.2.3. 등)도 모두 포함할 것
+
+⚠️ 당사자 명칭 및 조항 문구 verbatim 보존 규칙 (계약서에 필수):
+- documentContent의 고정 텍스트(조항 제목·본문)는 원문을 한 글자도 바꾸지 않고 그대로 복사할 것
+- 당사자 명칭(위탁자/수탁자, 도급인/수급인 등)을 임의의 다른 명칭으로 치환 절대 금지
+- 원문이 '위탁자'이면 '위탁자', '갑'이면 '갑' — AI가 임의로 변환 불가
+- 문장 재작성(paraphrase), 의역, 축약, 재배치 절대 금지
+- 원문 당사자 명칭을 party_a_label, party_b_label 필드에 반드시 기록할 것
 
 ${CONTRACT_HTML_GUIDE}
 
