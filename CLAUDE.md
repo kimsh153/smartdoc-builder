@@ -18,6 +18,7 @@
 - **PDF 생성**: html2pdf.js, docx
 - **폼**: react-hook-form + zod
 - **알림**: sonner (토스트)
+- **드래그앤드롭**: @dnd-kit/core + @dnd-kit/sortable (커스텀 필드 재배치)
 - **패키지 매니저**: npm
 - **테스트**: Jest + @testing-library/react
 
@@ -85,6 +86,7 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-019] 계약서 당사자 명칭·문구 원문 verbatim 보존 강제 — CONTRACT_HTML_GUIDE 갑/을 하드코딩 제거·동적 플레이스홀더 교체, HTML_SYSTEM_PROMPT/TEXT_SYSTEM_PROMPT verbatim 보존 규칙 추가, JSON_SCHEMA party_a_label/party_b_label 필드 추가, claudeParser PARSE_SYSTEM_PROMPT 당사자 명칭 보존 규칙 추가 (b4f5273)
 - [TASK-020] 업로드→파싱→에디터 통합 플로우 완성 — types/document.ts documentType 6종 확장, schemaToTemplate() 변환 브릿지 구현, DynamicForm onSubmit+버튼 추가, /parse Step 3 에디터 이동 CTA 연결, 대시보드 진입점 레이블 명확화 (31be80e)
 - [TASK-021] 용역계약서 템플릿 defaultTemplates 반영 — lib/types.ts FieldType에 'tel' 추가, DocumentType에 'service-contract' 추가, section-card.tsx tel 렌더러 추가, lib/용역계약서_template.json → templates.ts 변환 반영 (7섹션 21필드, 16개 조항 documentContent)
+- [TASK-022] 스마트문서 템플릿 고도화 (Phase 1/2/3) — TemplateEditor.tsx(MD 직접편집+플레이스홀더 자동완성), DynamicFieldPanel.tsx(동적 필드 추가/삭제/@dnd-kit 재배치), SampleSnippetDrawer.tsx(10종 샘플 조항 삽입), app/editor/page.tsx 3탭(폼입력/MD편집/미리보기)+커스텀 템플릿 저장/불러오기, lib/store.ts customContent·customFields·savedCustomTemplates 슬라이스 추가, lib/types.ts CustomTemplate 타입 추가
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->

@@ -777,12 +777,13 @@ function ProposalPreview({ content }: { content: string }) {
 // 메인 컴포넌트
 // ══════════════════════════════════════════════
 export function PreviewPanel() {
-  const { selectedTemplate, values } = useDocumentStore()
+  const { selectedTemplate, customContent, values } = useDocumentStore()
 
   const renderedContent = useMemo(() => {
     if (!selectedTemplate) return ''
-    return renderContent(selectedTemplate.documentContent, values)
-  }, [selectedTemplate, values])
+    const content = customContent ?? selectedTemplate.documentContent
+    return renderContent(content, values)
+  }, [selectedTemplate, customContent, values])
 
   if (!selectedTemplate) return null
 

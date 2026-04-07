@@ -2,6 +2,15 @@
 
 export type FieldType = 'text' | 'textarea' | 'select' | 'radio' | 'date' | 'number' | 'tel'
 
+export interface CustomTemplate {
+  id: string
+  name: string
+  baseTemplateId: string
+  createdAt: string
+  content: string
+  fields: Field[]
+}
+
 export interface FieldOption {
   label: string
   value: string

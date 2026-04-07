@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 
 export function EditorHeader() {
   const router = useRouter()
-  const { selectedTemplate, values, saveDocument, reset, isReviewing, setIsReviewing, setReviewResult } = useDocumentStore()
+  const { selectedTemplate, customContent, customFields, values, saveDocument, reset, isReviewing, setIsReviewing, setReviewResult } = useDocumentStore()
 
   const handleSave = () => {
     saveDocument()
@@ -23,8 +23,11 @@ export function EditorHeader() {
   const handleReview = async () => {
     if (!selectedTemplate) return
 
-    const fields = selectedTemplate.sections
-      .flatMap((s) => s.fields)
+    const allFields = [
+      ...selectedTemplate.sections.flatMap((s) => s.fields),
+      ...customFields,
+    ]
+    const fields = allFields
       .filter((f) => (f.type === 'text' || f.type === 'textarea') && values[f.id]?.trim())
       .map((f) => ({ id: f.id, label: f.label, value: values[f.id] }))
 
