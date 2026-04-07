@@ -75,9 +75,10 @@ function FieldInput({ field, value, onChange }: FieldInputProps) {
         )}
       </div>
 
-      {field.type === 'text' && (
+      {(field.type === 'text' || field.type === 'tel') && (
         <Input
           id={field.id}
+          type={field.type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}

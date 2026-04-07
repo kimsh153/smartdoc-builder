@@ -1,6 +1,6 @@
 // 문서 자동화 앱 타입 정의
 
-export type FieldType = 'text' | 'textarea' | 'select' | 'radio' | 'date' | 'number'
+export type FieldType = 'text' | 'textarea' | 'select' | 'radio' | 'date' | 'number' | 'tel'
 
 export interface FieldOption {
   label: string
@@ -23,11 +23,14 @@ export interface Section {
   fields: Field[]
 }
 
+export type DocumentType = 'contract' | 'quotation' | 'proposal' | 'service-contract'
+
 export interface Template {
   id: string
   name: string
   description: string
   icon: string
+  documentType?: DocumentType
   sections: Section[]
   documentContent: string // 문서 본문 템플릿 ({{fieldId}} 플레이스홀더)
 }

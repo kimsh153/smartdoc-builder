@@ -2,26 +2,17 @@
 
 import { useRouter } from 'next/navigation'
 import { useDocumentStore } from '@/lib/store'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Clock } from 'lucide-react'
 import type { Document } from '@/lib/types'
 
 interface DocumentCardProps {
   document: Document
 }
 
-const statusLabels: Record<Document['status'], string> = {
-  draft: '작성중',
-  reviewed: '검토완료',
-  confirmed: '확정',
-}
-
-const statusVariants: Record<Document['status'], 'secondary' | 'outline' | 'default'> = {
-  draft: 'secondary',
-  reviewed: 'outline',
-  confirmed: 'default',
+const statusConfig: Record<Document['status'], { label: string; color: string; bg: string }> = {
+  draft:     { label: '작성중',   color: '#f59e0b', bg: '#fffbeb' },
+  reviewed:  { label: '검토완료', color: '#3b82f6', bg: '#eff6ff' },
+  confirmed: { label: '확정',    color: '#10b981', bg: '#ecfdf5' },
 }
 
 export function DocumentCard({ document }: DocumentCardProps) {
@@ -39,33 +30,41 @@ export function DocumentCard({ document }: DocumentCardProps) {
   }
 
   const filledFields = Object.values(document.values).filter(Boolean).length
+  const status = statusConfig[document.status]
 
   return (
-    <Card className="group cursor-pointer transition-all hover:border-primary hover:shadow-md" onClick={handleClick}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <Badge variant={statusVariants[document.status]}>
-            {statusLabels[document.status]}
-          </Badge>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 text-destructive hover:text-destructive"
-            onClick={handleDelete}
+    <button
+      onClick={handleClick}
+      className="group w-full text-left rounded-xl border border-border bg-white shadow-none transition-all hover:shadow-md hover:border-transparent hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      <div className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+            style={{ background: status.bg, color: status.color }}
           >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+            {status.label}
+          </span>
+          <button
+            onClick={handleDelete}
+            className="flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </button>
         </div>
-        <CardTitle className="mt-2 text-lg">{document.templateName}</CardTitle>
-        <CardDescription>
-          {new Date(document.updatedAt).toLocaleDateString('ko-KR')} 수정
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          {filledFields}개 필드 작성됨
-        </p>
-      </CardContent>
-    </Card>
+
+        <p className="text-sm font-semibold text-foreground leading-snug">{document.templateName}</p>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {filledFields}개 필드 작성됨
+          </span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            {new Date(document.updatedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+      </div>
+    </button>
   )
 }

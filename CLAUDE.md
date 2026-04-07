@@ -84,6 +84,7 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-018] 계약서 AI 분석 조항 누락 버그 수정 — TEXT_SYSTEM_PROMPT/HTML_SYSTEM_PROMPT/CONTRACT_HTML_GUIDE에 원문 전체 보존 강제 규칙 추가, JSON_SCHEMA clauseIndex 필드 추가, 조항 수 불일치 경고 로직, max_tokens 확대 (3fcc687)
 - [TASK-019] 계약서 당사자 명칭·문구 원문 verbatim 보존 강제 — CONTRACT_HTML_GUIDE 갑/을 하드코딩 제거·동적 플레이스홀더 교체, HTML_SYSTEM_PROMPT/TEXT_SYSTEM_PROMPT verbatim 보존 규칙 추가, JSON_SCHEMA party_a_label/party_b_label 필드 추가, claudeParser PARSE_SYSTEM_PROMPT 당사자 명칭 보존 규칙 추가 (b4f5273)
 - [TASK-020] 업로드→파싱→에디터 통합 플로우 완성 — types/document.ts documentType 6종 확장, schemaToTemplate() 변환 브릿지 구현, DynamicForm onSubmit+버튼 추가, /parse Step 3 에디터 이동 CTA 연결, 대시보드 진입점 레이블 명확화 (31be80e)
+- [TASK-021] 용역계약서 템플릿 defaultTemplates 반영 — lib/types.ts FieldType에 'tel' 추가, DocumentType에 'service-contract' 추가, section-card.tsx tel 렌더러 추가, lib/용역계약서_template.json → templates.ts 변환 반영 (7섹션 21필드, 16개 조항 documentContent)
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
@@ -98,6 +99,6 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - 상태관리: Redux 대신 Zustand v5 선택 (가볍고 persist 미들웨어 내장)
 - 다중 AI SDK 보유: Claude(Anthropic), Gemini(Google), OpenAI 모두 설치 — 실제 사용 API는 검토 필요
 - 문서 파싱: 서버사이드에서만 처리 (mammoth, pdf-parse는 Node.js 전용)
-- 템플릿 6종: 사업기획서, 프로젝트제안서, 업무계약서, 회의록, 주간/월간보고서, 견적서
+- 템플릿 7종: 사업기획서, 프로젝트제안서, 업무계약서, 회의록, 주간/월간보고서, 견적서, 용역계약서(한국형)
 - Tailwind CSS v4 사용 (v3과 설정 방식 다름 — `@tailwindcss/postcss` 플러그인 방식)
 - 폰트: Noto Sans KR / Noto Serif KR (한국어 최적화)

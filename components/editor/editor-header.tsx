@@ -55,25 +55,72 @@ export function EditorHeader() {
     }
   }
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     const element = document.getElementById('document-preview')
     if (!element) return
 
-    const html2pdf = (await import('html2pdf.js')).default
-    const filename = `${selectedTemplate?.name || '문서'}_${new Date().toISOString().slice(0, 10)}.pdf`
+    const filename = `${selectedTemplate?.name || '문서'}_${new Date().toISOString().slice(0, 10)}`
+    const docType = (selectedTemplate as any)?.documentType ?? 'contract'
 
-    toast.info('PDF 생성 중...')
-    await html2pdf()
-      .set({
-        margin: 0,
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      })
-      .from(element)
-      .save()
-    toast.success('PDF가 다운로드되었습니다')
+    // 스타일 태그 포함 전체 innerHTML 복사
+    const content = element.innerHTML
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=800')
+    if (!printWindow) {
+      toast.error('팝업이 차단되었습니다. 브라우저 팝업 허용 후 다시 시도해주세요.')
+      return
+    }
+
+    const isProposal = docType === 'proposal'
+    const isQuotation = docType === 'quotation'
+
+    const pageStyle = isProposal
+      ? `
+        body { background: #c8c8c8; margin: 0; padding: 24px; }
+        #document-preview { width: 100%; max-width: 960px; margin: 0 auto; }
+        @media print {
+          body { background: #c8c8c8; padding: 0; }
+          @page { size: A4 landscape; margin: 10mm; }
+        }
+      `
+      : isQuotation
+      ? `
+        body { background: #d0d0d0; margin: 0; padding: 24px; display: flex; justify-content: center; }
+        #document-preview { width: 210mm; background: #fff; }
+        @media print {
+          body { background: white; padding: 0; display: block; }
+          #document-preview { width: 100%; box-shadow: none; }
+          @page { size: A4; margin: 0; }
+        }
+      `
+      : `
+        body { background: #e8e8e8; margin: 0; padding: 24px; display: flex; justify-content: center; }
+        #document-preview { width: 210mm; min-height: 297mm; background: #fff; }
+        @media print {
+          body { background: white; padding: 0; display: block; }
+          #document-preview { width: 100%; min-height: 0; box-shadow: none; }
+          @page { size: A4; margin: 0; }
+        }
+      `
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>${filename}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ${pageStyle}
+  </style>
+</head>
+<body>
+  <div id="document-preview">${content}</div>
+  <script>
+    document.fonts.ready.then(function() { window.print(); });
+  <\/script>
+</body>
+</html>`)
+    printWindow.document.close()
   }
 
   return (
