@@ -2,6 +2,7 @@
 
 import { useDocumentStore } from '@/lib/store'
 import { SectionCard } from './section-card'
+import { ContractOptionsCard } from './contract-options-card'
 import { DynamicFieldPanel } from './DynamicFieldPanel'
 
 export function InputPanel() {
@@ -9,23 +10,37 @@ export function InputPanel() {
 
   if (!selectedTemplate) return null
 
+  // contract-options 섹션을 분리
+  const optionsSection = selectedTemplate.sections.find(s => s.id === 'contract-options')
+  const regularSections = selectedTemplate.sections.filter(s => s.id !== 'contract-options')
+
   return (
     <div className="p-6 pb-4">
+      {/* 계약 옵션 섹션 (스마트 질문) */}
+      {optionsSection && (
+        <div className="mb-6">
+          <ContractOptionsCard section={optionsSection} />
+        </div>
+      )}
+
       <div className="space-y-6">
-        {selectedTemplate.sections.map((section, index) => (
+        {regularSections.map((section, index) => (
           <SectionCard
             key={section.id}
             section={section}
             index={index + 1}
-            total={selectedTemplate.sections.length}
+            total={regularSections.length}
           />
         ))}
       </div>
 
-      {/* 커스텀 필드 (Phase 2) */}
+      {/* 커스텀 필드 (Phase 2) — showIf 조건 필터링 적용 */}
       {customFields.length > 0 && (
         <div className="mt-6 space-y-4">
-          {customFields.map((field) => (
+          {customFields.filter(field => {
+            if (!field.showIf) return true
+            return values[field.showIf.fieldId] === field.showIf.value
+          }).map((field) => (
             <div key={field.id} className="space-y-2 px-0">
               <label className="text-sm font-medium text-foreground flex items-center gap-1">
                 {field.label}

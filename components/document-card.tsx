@@ -29,13 +29,23 @@ export function DocumentCard({ document }: DocumentCardProps) {
     deleteDocument(document.id)
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
   const filledFields = Object.values(document.values).filter(Boolean).length
   const status = statusConfig[document.status]
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
-      className="group w-full text-left rounded-xl border border-border bg-white shadow-none transition-all hover:shadow-md hover:border-transparent hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      onKeyDown={handleKeyDown}
+      className="group w-full text-left rounded-xl border border-border bg-white shadow-none transition-all hover:shadow-md hover:border-transparent hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
     >
       <div className="p-4">
         <div className="mb-3 flex items-start justify-between">
@@ -65,6 +75,6 @@ export function DocumentCard({ document }: DocumentCardProps) {
           </span>
         </div>
       </div>
-    </button>
+    </div>
   )
 }

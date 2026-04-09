@@ -2,6 +2,12 @@
 
 export type FieldType = 'text' | 'textarea' | 'select' | 'radio' | 'date' | 'number' | 'tel'
 
+/** 조건부 표시 규칙 — fieldId가 value일 때만 이 필드를 표시 */
+export interface ShowIfRule {
+  fieldId: string
+  value: string
+}
+
 export interface CustomTemplate {
   id: string
   name: string
@@ -9,6 +15,12 @@ export interface CustomTemplate {
   createdAt: string
   content: string
   fields: Field[]
+  /** 저장 범위 (초기엔 로컬 persist) */
+  scope?: 'personal' | 'team' | 'company'
+  /** 즐겨찾기 플래그 */
+  starred?: boolean
+  /** 버전 태그 (예: "v1", "draft") */
+  versionTag?: string
 }
 
 export interface FieldOption {
@@ -24,6 +36,7 @@ export interface Field {
   options?: FieldOption[]
   required?: boolean
   guide?: string // ⓘ 작성 가이드
+  showIf?: ShowIfRule // 조건부 표시 규칙
 }
 
 export interface Section {

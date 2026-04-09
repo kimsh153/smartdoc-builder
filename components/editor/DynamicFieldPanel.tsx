@@ -17,13 +17,13 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDocumentStore } from '@/lib/store'
-import type { Field, FieldType } from '@/lib/types'
+import type { Field, FieldType, ShowIfRule } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { GripVertical, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react'
 
 // ── Sortable item ──────────────────────────────────────────
 function SortableFieldItem({ field, onRemove }: { field: Field; onRemove: (id: string) => void }) {
@@ -48,6 +48,11 @@ function SortableFieldItem({ field, onRemove }: { field: Field; onRemove: (id: s
       <span className="flex-1 font-medium truncate">{field.label}</span>
       <span className="text-xs text-muted-foreground font-mono">{`{{${field.id}}}`}</span>
       <span className="text-xs text-muted-foreground border rounded px-1">{field.type}</span>
+      {field.showIf && (
+        <span className="text-xs text-blue-500 border border-blue-200 rounded px-1" title={`조건: {{${field.showIf.fieldId}}} = "${field.showIf.value}"`}>
+          조건부
+        </span>
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -62,28 +67,48 @@ function SortableFieldItem({ field, onRemove }: { field: Field; onRemove: (id: s
 
 // ── Add field dialog ───────────────────────────────────────
 function AddFieldDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { addCustomField } = useDocumentStore()
+  const { addCustomField, customFields, selectedTemplate } = useDocumentStore()
   const [label, setLabel] = useState('')
   const [type, setType] = useState<FieldType>('text')
   const [required, setRequired] = useState(false)
   const [guide, setGuide] = useState('')
+  const [placeholder, setPlaceholder] = useState('')
+  const [showIfEnabled, setShowIfEnabled] = useState(false)
+  const [showIfFieldId, setShowIfFieldId] = useState('')
+  const [showIfValue, setShowIfValue] = useState('')
+
+  // Collect all available fields for showIf selector
+  const allAvailableFields = [
+    ...(selectedTemplate?.sections.flatMap(s => s.fields) ?? []),
+    ...customFields,
+  ]
 
   const handleAdd = () => {
     if (!label.trim()) return
     const id = `custom_${Date.now()}`
+    const showIf: ShowIfRule | undefined =
+      showIfEnabled && showIfFieldId && showIfValue
+        ? { fieldId: showIfFieldId, value: showIfValue }
+        : undefined
     const field: Field = {
       id,
       label: label.trim(),
       type,
       required,
       guide: guide.trim() || undefined,
-      placeholder: `${label.trim()} 입력`,
+      placeholder: placeholder.trim() || `${label.trim()} 입력`,
+      showIf,
     }
     addCustomField(field)
+    // reset
     setLabel('')
     setType('text')
     setRequired(false)
     setGuide('')
+    setPlaceholder('')
+    setShowIfEnabled(false)
+    setShowIfFieldId('')
+    setShowIfValue('')
     onClose()
   }
 
@@ -113,10 +138,19 @@ function AddFieldDialog({ open, onClose }: { open: boolean; onClose: () => void 
                 <SelectItem value="text">텍스트 (text)</SelectItem>
                 <SelectItem value="textarea">긴 텍스트 (textarea)</SelectItem>
                 <SelectItem value="date">날짜 (date)</SelectItem>
+                <SelectItem value="number">숫자 (number)</SelectItem>
                 <SelectItem value="select">선택 (select)</SelectItem>
                 <SelectItem value="tel">전화번호 (tel)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>플레이스홀더 (선택)</Label>
+            <Input
+              value={placeholder}
+              onChange={(e) => setPlaceholder(e.target.value)}
+              placeholder={`${label || '값'} 입력`}
+            />
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -136,6 +170,48 @@ function AddFieldDialog({ open, onClose }: { open: boolean; onClose: () => void 
               placeholder="이 필드에 대한 설명"
             />
           </div>
+
+          {/* 조건부 표시 규칙 (showIf) */}
+          <div className="space-y-2 rounded-md border p-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="showif-check"
+                checked={showIfEnabled}
+                onChange={(e) => setShowIfEnabled(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="showif-check" className="font-normal cursor-pointer text-sm">
+                조건부 표시 규칙 (showIf)
+              </Label>
+            </div>
+            {showIfEnabled && (
+              <div className="mt-2 space-y-2 pl-1">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">이 필드를 표시할 조건 — 특정 필드가 값일 때만</Label>
+                  <Select value={showIfFieldId} onValueChange={setShowIfFieldId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="조건 필드 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allAvailableFields.map(f => (
+                        <SelectItem key={f.id} value={f.id}>{f.label} ({f.id})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Input
+                    className="h-8 text-xs"
+                    value={showIfValue}
+                    onChange={(e) => setShowIfValue(e.target.value)}
+                    placeholder="조건 값 (예: yes)"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>취소</Button>
             <Button onClick={handleAdd} disabled={!label.trim()}>추가</Button>
@@ -150,6 +226,7 @@ function AddFieldDialog({ open, onClose }: { open: boolean; onClose: () => void 
 export function DynamicFieldPanel() {
   const { customFields, updateCustomFields, removeCustomField } = useDocumentStore()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor))
 
@@ -163,30 +240,52 @@ export function DynamicFieldPanel() {
 
   return (
     <div className="border-t pt-4 mt-4 space-y-3">
+      {/* 섹션 헤더 — 접기/펼치기 */}
       <div className="flex items-center justify-between px-4">
-        <h4 className="text-sm font-semibold text-foreground">커스텀 필드</h4>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+          onClick={() => setCollapsed(v => !v)}
+          aria-expanded={!collapsed}
+        >
+          {collapsed
+            ? <ChevronRight className="h-4 w-4" />
+            : <ChevronDown className="h-4 w-4" />
+          }
+          커스텀 필드
+          {customFields.length > 0 && (
+            <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+              {customFields.length}
+            </span>
+          )}
+        </button>
         <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           필드 추가
         </Button>
       </div>
 
-      {customFields.length === 0 ? (
-        <p className="px-4 text-xs text-muted-foreground">
-          [+ 필드 추가] 버튼으로 커스텀 항목을 추가하세요.
-        </p>
-      ) : (
-        <div className="px-4">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={customFields.map(f => f.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {customFields.map(field => (
-                  <SortableFieldItem key={field.id} field={field} onRemove={removeCustomField} />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        </div>
+      {/* 필드 목록 — collapsed 시 숨김 */}
+      {!collapsed && (
+        <>
+          {customFields.length === 0 ? (
+            <p className="px-4 text-xs text-muted-foreground">
+              [+ 필드 추가] 버튼으로 커스텀 항목을 추가하세요.
+            </p>
+          ) : (
+            <div className="px-4">
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={customFields.map(f => f.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {customFields.map(field => (
+                      <SortableFieldItem key={field.id} field={field} onRemove={removeCustomField} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          )}
+        </>
       )}
 
       <AddFieldDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />

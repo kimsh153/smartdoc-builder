@@ -24,8 +24,14 @@ export function SectionCard({ section, index, total }: SectionCardProps) {
     setActiveSection(section.id)
   }
 
+  // Filter fields by showIf condition
+  const visibleFields = section.fields.filter(field => {
+    if (!field.showIf) return true
+    return values[field.showIf.fieldId] === field.showIf.value
+  })
+
   return (
-    <Card 
+    <Card
       className="border transition-all focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
       onFocus={handleFocus}
     >
@@ -36,11 +42,11 @@ export function SectionCard({ section, index, total }: SectionCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        {section.fields.map((field) => (
-          <FieldInput 
-            key={field.id} 
-            field={field} 
-            value={values[field.id] || ''} 
+        {visibleFields.map((field) => (
+          <FieldInput
+            key={field.id}
+            field={field}
+            value={values[field.id] || ''}
             onChange={(val) => setValue(field.id, val)}
           />
         ))}

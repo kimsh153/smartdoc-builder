@@ -1,17 +1,33 @@
 'use client'
 
 import { useDocumentStore } from '@/lib/store'
+import { defaultQuotationTemplates } from '@/lib/quotation/templates'
 import { TemplateCard } from '@/components/template-card'
+import { QuotationTemplateCard } from '@/components/quotation-template-card'
 import { DocumentCard } from '@/components/document-card'
 import { Button } from '@/components/ui/button'
 import { FileUp, Sparkles, FileText, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
+import { ImportTemplateDialog } from '@/components/editor/ImportTemplateDialog'
+import type { Template } from '@/lib/types'
 
 export default function DashboardPage() {
   const { templates, documents } = useDocumentStore()
+  const quotationTemplates = defaultQuotationTemplates
+  const [importingTemplate, setImportingTemplate] = useState<Template | null>(null)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
+      <ImportTemplateDialog
+        open={isImportDialogOpen}
+        template={importingTemplate}
+        onClose={() => {
+          setIsImportDialogOpen(false)
+          setImportingTemplate(null)
+        }}
+      />
       {/* Header */}
       <header className="border-b border-border/60 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
@@ -22,11 +38,35 @@ export default function DashboardPage() {
             <span className="text-base font-semibold tracking-tight text-foreground">DocuFlow</span>
           </div>
           <nav className="flex items-center gap-1.5">
-            <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-              <Link href="/parse">
-                <FileUp className="mr-1.5 h-3.5 w-3.5" />
-                기존 문서 파싱
-              </Link>
+            <input
+              type="file"
+              id="import-template"
+              className="hidden"
+              accept=".json"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = (event) => {
+                  try {
+                    const template = JSON.parse(event.target?.result as string) as Template
+                    setImportingTemplate(template)
+                    setIsImportDialogOpen(true)
+                  } catch (err) {
+                    import('sonner').then(({ toast }) => toast.error('올바른 템플릿 파일이 아닙니다.'))
+                  }
+                }
+                reader.readAsText(file)
+                e.target.value = ''
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => document.getElementById('import-template')?.click()}
+            >
+              <FileUp className="mr-1.5 h-3.5 w-3.5" />
+              템플릿 가져오기
             </Button>
             <Button size="sm" asChild>
               <Link href="/upload">
@@ -53,13 +93,16 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">기본 템플릿</span>
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                {templates.length}
+                {templates.length + quotationTemplates.length}
               </span>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {templates.map((template) => (
               <TemplateCard key={template.id} template={template} />
+            ))}
+            {quotationTemplates.map((template) => (
+              <QuotationTemplateCard key={template.id} template={template} />
             ))}
             {/* AI 템플릿 생성 카드 */}
             <Link href="/upload" className="group block">

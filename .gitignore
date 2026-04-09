@@ -1,4 +1,43 @@
-# v0 sandbox internal files
+# ── Dependencies ──────────────────────────────
+node_modules/
+
+# ── Next.js ───────────────────────────────────
+.next/
+out/
+
+# ── Environment variables ─────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# ── Build output ──────────────────────────────
+dist/
+build/
+
+# ── Test & Coverage ───────────────────────────
+coverage/
+
+# ── TypeScript ────────────────────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ── OS ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editor ────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── v0 / Vercel ───────────────────────────────
 __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
@@ -6,11 +45,3 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 next.user-config.*
-
-# Environment variables
-.env*.local
-
-# Common ignores
-node_modules
-.next/
-.DS_Store

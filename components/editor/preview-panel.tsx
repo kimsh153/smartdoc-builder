@@ -1,7 +1,9 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useDocumentStore } from '@/lib/store'
+import { marked } from 'marked'
+import { processConditionals } from '@/lib/contractEngine'
 
 function escapeHtml(str: string): string {
   return str
@@ -12,11 +14,18 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#x27;')
 }
 
-function renderContent(content: string, values: Record<string, string>): string {
-  const isHtml = /<[a-zA-Z][\s\S]*>/.test(content)
+function renderContent(
+  content: string,
+  values: Record<string, string>,
+  templateName?: string
+): string {
   const placeholderRegex = /\{\{(\w+)\}\}/g
 
-  let rendered = content.replace(placeholderRegex, (_match, fieldId) => {
+  // 1단계: 조건 블록 처리
+  const processed = processConditionals(content, values)
+  const isHtml = /<[a-zA-Z][\s\S]*>/.test(processed)
+
+  let rendered = processed.replace(placeholderRegex, (_match, fieldId) => {
     const value = values[fieldId]
     if (value) {
       return `<span class="filled-value">${escapeHtml(value)}</span>`
@@ -24,33 +33,160 @@ function renderContent(content: string, values: Record<string, string>): string 
     return '<span class="empty-value">&nbsp;&nbsp;&nbsp;&nbsp;</span>'
   })
 
+  // Heuristic: If there is no HTML and the first line looks like a title, wrap it in h1
   if (!isHtml) {
-    rendered = rendered.replace(/\n/g, '<br />')
+    const lines = rendered.split('\n')
+    const firstNonEmptyIdx = lines.findIndex((l) => l.trim().length > 0)
+    if (firstNonEmptyIdx !== -1) {
+      const firstLine = lines[firstNonEmptyIdx].trim()
+      if (firstLine.length <= 60 && !firstLine.endsWith('.') && !firstLine.endsWith(',') && !firstLine.startsWith('#')) {
+        lines[firstNonEmptyIdx] = `<h1 class="doc-title">${firstLine}</h1>`
+        rendered = lines.join('\n')
+      }
+    }
   }
+
+  // Parse markdown to HTML (allows mixing with HTML, converts \n to <br/>)
+  rendered = marked.parse(rendered, { async: false, breaks: true }) as string;
+
+  // Ensure there is a document title
+  if (!/<h1[\s>]/i.test(rendered) && !rendered.includes('doc-title')) {
+    if (templateName) {
+      rendered = `<h1 class="doc-title">${escapeHtml(templateName)}</h1>\n${rendered}`
+    }
+  }
+
   return rendered
 }
+
+// ══════════════════════════════════════════════
+// 페이지네이션 래퍼 컴포넌트
+// ══════════════════════════════════════════════
+function PaginatedView({ content, pageStyle, cssString, containerBg }: { content: string, pageStyle: React.CSSProperties, cssString: string, containerBg: string }) {
+  const [pages, setPages] = useState<string[]>([])
+  const [isPaginating, setIsPaginating] = useState(true)
+
+  const measureBoardRef = useRef<HTMLDivElement>(null)
+  const pageTesterRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let active = true;
+    setIsPaginating(true);
+    
+    setTimeout(() => {
+      if (!active) return;
+      if (!measureBoardRef.current || !pageTesterRef.current) {
+        setIsPaginating(false);
+        setPages([content]);
+        return;
+      }
+
+      const nodes = Array.from(measureBoardRef.current.childNodes) as ChildNode[];
+      const newPages: string[] = [];
+      const tester = pageTesterRef.current;
+      
+      tester.innerHTML = '';
+      
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i].cloneNode(true) as HTMLElement;
+        tester.appendChild(node);
+        
+        if (tester.scrollHeight > tester.clientHeight) {
+          tester.removeChild(node);
+          
+          if (tester.innerHTML.trim() !== '') {
+            newPages.push(tester.innerHTML);
+            tester.innerHTML = '';
+          }
+          tester.appendChild(node);
+        }
+      }
+      
+      if (tester.innerHTML.trim() !== '') {
+        newPages.push(tester.innerHTML);
+      }
+      
+      if (newPages.length === 0) {
+         newPages.push(content);
+      }
+      
+      if (active) {
+        setPages(newPages);
+        setIsPaginating(false);
+      }
+    }, 100);
+    
+    return () => { active = false; };
+  }, [content]);
+
+  const adjustedCss = cssString.replace(/#document-preview/g, '.document-preview-page') + `
+    @media print {
+      body { background: #fff !important; }
+      .document-preview-page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        page-break-after: always;
+      }
+      .document-preview-page:last-child {
+        page-break-after: auto;
+      }
+    }
+  `;
+
+  return (
+    <div style={{ background: containerBg, minHeight: '100%', padding: '32px', display: 'flex', justifyContent: 'center' }}>
+      <style>{adjustedCss}</style>
+
+      <div style={{ position: 'absolute', top: -9999, left: -9999, visibility: 'hidden', pointerEvents: 'none' }}>
+        <div ref={measureBoardRef} style={pageStyle} dangerouslySetInnerHTML={{ __html: content }} />
+        <div ref={pageTesterRef} style={{ ...pageStyle, height: '297mm', overflow: 'hidden' }} />
+      </div>
+
+      <div id="document-preview" style={{ display: 'block' }}>
+        {isPaginating ? (
+          <div style={{ ...pageStyle, height: '297mm', background: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }} className="document-preview-page">
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#888' }}>
+              문서 페이지 분할 처리 중...
+            </div>
+          </div>
+        ) : (
+          pages.map((htmlString, idx) => (
+            <div 
+              key={idx} 
+              className="document-preview-page" 
+              style={{ 
+                ...pageStyle, 
+                background: '#fff', 
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                minHeight: '297mm',
+                marginBottom: idx === pages.length - 1 ? 0 : '24px'
+              }} 
+              dangerouslySetInnerHTML={{ __html: htmlString }} 
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 // ══════════════════════════════════════════════
 // 계약서 렌더러 — A4 공문서 스타일
 // ══════════════════════════════════════════════
 function ContractPreview({ content }: { content: string }) {
-  return (
-    <div style={{ background: '#e8e8e8', minHeight: '100%', padding: '32px', display: 'flex', justifyContent: 'center' }}>
-      <div
-        id="document-preview"
-        style={{
-          width: '210mm',
-          minHeight: '297mm',
-          background: '#fff',
-          padding: '28mm 22mm 28mm 28mm',
-          fontFamily: "'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
-          fontSize: '10pt',
-          lineHeight: '2.0',
-          color: '#111',
-          boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
-        }}
-      >
-        <style>{`
+  const pageStyle: React.CSSProperties = {
+    position: 'relative',
+    width: '210mm',
+    padding: '28mm 22mm 28mm 28mm',
+    fontFamily: "'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
+    fontSize: '10pt',
+    lineHeight: '2.0',
+    color: '#111',
+    zIndex: 1,
+  };
+
+  const css = `
           #document-preview .filled-value {
             font-weight: 700;
             text-decoration: underline;
@@ -116,19 +252,28 @@ function ContractPreview({ content }: { content: string }) {
 
           /* 번호 목록 */
           #document-preview .doc-list,
-          #document-preview ol,
+          #document-preview ol {
+            font-size: 10pt;
+            line-height: 2.1;
+            padding-left: 1.8em;
+            margin: 0.3em 0;
+            color: #111;
+            list-style-type: decimal;
+          }
           #document-preview ul {
             font-size: 10pt;
             line-height: 2.1;
             padding-left: 1.8em;
             margin: 0.3em 0;
             color: #111;
+            list-style-type: disc;
           }
           #document-preview .doc-list li,
           #document-preview li {
             margin: 0.1em 0;
             text-align: justify;
             word-break: keep-all;
+            display: list-item;
           }
 
           /* 표 */
@@ -181,32 +326,49 @@ function ContractPreview({ content }: { content: string }) {
 
           #document-preview strong { font-weight: 700; }
           #document-preview h3 { font-size: 10pt; font-weight: 700; margin: 0.8em 0 0.4em; }
-        `}</style>
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      </div>
-    </div>
-  )
+
+          /* A4 페이지 경계선 (화면 전용) */
+          @media screen {
+            #document-preview {
+              background-image: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                transparent calc(297mm - 1px),
+                #bbb calc(297mm - 1px),
+                #bbb 297mm
+              );
+            }
+          }
+
+          /* 인쇄 시 페이지 분할 규칙 */
+          @media print {
+            #document-preview .doc-article,
+            #document-preview .doc-section,
+            #document-preview tr,
+            #document-preview li { break-inside: avoid; }
+            #document-preview .doc-signature { break-before: avoid; break-inside: avoid; }
+            #document-preview table { break-inside: auto; }
+          }
+  `;
+
+  return <PaginatedView content={content} pageStyle={pageStyle} cssString={css} containerBg="#e8e8e8" />;
 }
 
 // ══════════════════════════════════════════════
 // 견적서 렌더러 — 엑셀/스프레드시트 스타일
 // ══════════════════════════════════════════════
 function QuotationPreview({ content }: { content: string }) {
-  return (
-    <div style={{ background: '#d0d0d0', minHeight: '100%', padding: '32px', display: 'flex', justifyContent: 'center' }}>
-      <div
-        id="document-preview"
-        style={{
-          width: '210mm',
-          background: '#fff',
-          padding: '12mm 14mm 16mm',
-          fontFamily: "'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
-          fontSize: '8.5pt',
-          color: '#111',
-          boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
-        }}
-      >
-        <style>{`
+  const pageStyle: React.CSSProperties = {
+    position: 'relative',
+    width: '210mm',
+    padding: '12mm 14mm 16mm',
+    fontFamily: "'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
+    fontSize: '8.5pt',
+    color: '#111',
+    zIndex: 1,
+  };
+
+  const css = `
           #document-preview .filled-value {
             font-weight: 700;
             text-decoration: underline;
@@ -451,9 +613,10 @@ function QuotationPreview({ content }: { content: string }) {
           #document-preview ol {
             padding-left: 1.4em;
             margin: 0;
+            list-style-type: decimal;
           }
           #document-preview .quot-notes li,
-          #document-preview li { margin: 2px 0; }
+          #document-preview li { margin: 2px 0; display: list-item; }
 
           /* ── 푸터 ── */
           #document-preview .quot-footer {
@@ -468,12 +631,30 @@ function QuotationPreview({ content }: { content: string }) {
           #document-preview h2 { font-size: 10pt; font-weight: 700; margin: 10px 0 6px; }
           #document-preview p { font-size: 8.5pt; line-height: 1.6; margin: 2px 0; }
           #document-preview strong { font-weight: 700; }
-          #document-preview ul { padding-left: 1.4em; margin: 0; }
-        `}</style>
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      </div>
-    </div>
-  )
+          #document-preview ul { padding-left: 1.4em; margin: 0; list-style-type: disc; }
+
+          /* A4 페이지 경계선 (화면 전용) */
+          @media screen {
+            #document-preview {
+              background-image: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                transparent calc(297mm - 1px),
+                #bbb calc(297mm - 1px),
+                #bbb 297mm
+              );
+            }
+          }
+
+          /* 인쇄 시 페이지 분할 규칙 */
+          @media print {
+            #document-preview tr,
+            #document-preview li { break-inside: avoid; }
+            #document-preview table { break-inside: auto; }
+          }
+  `;
+
+  return <PaginatedView content={content} pageStyle={pageStyle} cssString={css} containerBg="#d0d0d0" />;
 }
 
 // ══════════════════════════════════════════════
@@ -763,9 +944,20 @@ function ProposalPreview({ content }: { content: string }) {
           #document-preview h2 { font-size: 15pt; font-weight: 800; color: #111; border-bottom: 2.5px solid #1458C8; padding-bottom: 10px; margin: 0 0 20px; }
           #document-preview h3 { font-size: 12pt; font-weight: 700; color: #1458C8; margin: 12px 0 6px; }
           #document-preview p { font-size: 10pt; line-height: 1.85; color: #333; margin: 6px 0; }
-          #document-preview ul, #document-preview ol { padding-left: 1.5em; }
-          #document-preview li { line-height: 1.9; font-size: 10pt; color: #333; }
+          #document-preview ul { padding-left: 1.5em; list-style-type: disc; }
+          #document-preview ol { padding-left: 1.5em; list-style-type: decimal; }
+          #document-preview li { line-height: 1.9; font-size: 10pt; color: #333; display: list-item; }
           #document-preview strong { font-weight: 700; }
+
+          /* 인쇄 시 슬라이드 단위 페이지 분할 */
+          @media print {
+            #document-preview .prop-cover,
+            #document-preview .prop-slide,
+            #document-preview .doc-section { break-inside: avoid; page-break-inside: avoid; }
+            #document-preview tr,
+            #document-preview li { break-inside: avoid; }
+            #document-preview table { break-inside: auto; }
+          }
         `}</style>
         <div dangerouslySetInnerHTML={{ __html: content }} />
       </div>
@@ -777,13 +969,21 @@ function ProposalPreview({ content }: { content: string }) {
 // 메인 컴포넌트
 // ══════════════════════════════════════════════
 export function PreviewPanel() {
-  const { selectedTemplate, customContent, values } = useDocumentStore()
+  const { selectedTemplate, customContent, customTitle, values } = useDocumentStore()
+
+  // Debounce customContent changes by ≤ 300ms so MD editor typing doesn't thrash the preview
+  const [debouncedContent, setDebouncedContent] = useState(customContent)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedContent(customContent), 300)
+    return () => clearTimeout(timer)
+  }, [customContent])
 
   const renderedContent = useMemo(() => {
     if (!selectedTemplate) return ''
-    const content = customContent ?? selectedTemplate.documentContent
-    return renderContent(content, values)
-  }, [selectedTemplate, customContent, values])
+    const content = debouncedContent ?? selectedTemplate.documentContent
+    const docName = customTitle ?? selectedTemplate.name
+    return renderContent(content, values, docName)
+  }, [selectedTemplate, debouncedContent, customTitle, values])
 
   if (!selectedTemplate) return null
 

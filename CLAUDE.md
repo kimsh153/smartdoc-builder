@@ -87,15 +87,33 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-020] 업로드→파싱→에디터 통합 플로우 완성 — types/document.ts documentType 6종 확장, schemaToTemplate() 변환 브릿지 구현, DynamicForm onSubmit+버튼 추가, /parse Step 3 에디터 이동 CTA 연결, 대시보드 진입점 레이블 명확화 (31be80e)
 - [TASK-021] 용역계약서 템플릿 defaultTemplates 반영 — lib/types.ts FieldType에 'tel' 추가, DocumentType에 'service-contract' 추가, section-card.tsx tel 렌더러 추가, lib/용역계약서_template.json → templates.ts 변환 반영 (7섹션 21필드, 16개 조항 documentContent)
 - [TASK-022] 스마트문서 템플릿 고도화 (Phase 1/2/3) — TemplateEditor.tsx(MD 직접편집+플레이스홀더 자동완성), DynamicFieldPanel.tsx(동적 필드 추가/삭제/@dnd-kit 재배치), SampleSnippetDrawer.tsx(10종 샘플 조항 삽입), app/editor/page.tsx 3탭(폼입력/MD편집/미리보기)+커스텀 템플릿 저장/불러오기, lib/store.ts customContent·customFields·savedCustomTemplates 슬라이스 추가, lib/types.ts CustomTemplate 타입 추가
+- [TASK-023] 템플릿 에디터 고도화 — lib/qa/templateQA.ts(신규, 플레이스홀더·중복ID·페이지예측), QAResultPanel.tsx(신규, 에디터 하단 QA패널+useQAResult훅), TemplateEditor.tsx Undo/Redo 버튼, DynamicFieldPanel.tsx 섹션 접기/펼치기·showIf·number타입, preview-panel.tsx 300ms debounce, app/editor/page.tsx MD탭 QA배지·저장버튼 비활성화(QA fail), CustomTemplate scope/starred/versionTag (787fb2b)
+- [TASK-024] A4 페이지 분할 미작동 수정 — preview-panel.tsx repeating-linear-gradient로 297mm 페이지 경계선 시각화(screen only), @media print break-inside:avoid 규칙 추가(doc-article·doc-section·tr·li·doc-signature), editor-header.tsx @page margin:0→10mm 수정, 각 docType별 break-inside 규칙 추가 (a443101) closes #40
+- [TASK-026] PDF 다운로드 레이아웃 붕괴 수정 — editor-header.tsx handleDownload() innerHTML→outerHTML 교체(컨테이너 padding·font·line-height 인라인 스타일 보존), 프린트 창 head에 Noto Sans KR Google Fonts 링크 추가, contract @page margin 10mm→0(컨테이너 28mm 패딩이 여백 담당), @media print box-shadow:none!important 추가 closes #42
+- [TASK-027] 문서 제목 렌더링·A4 다중 페이지 여백·DOCX/Google Docs 다운로드 — preview-panel.tsx renderContent()에 templateName 인수 추가(첫 줄 ≤60자 → `<h1 class="doc-title">` 자동 래핑, 긴 첫 줄 → 템플릿명 prepend fallback), editor-header.tsx @page margin:0→20mm 22mm 20mm 28mm(2페이지+ 상단 여백 보장)·print 시 container padding:0 오버라이드·다운로드 버튼 DropdownMenu(PDF/DOCX/Google Docs), lib/exporters/toDocx.ts 신규(DOM 파싱→Heading1/2/3/Normal docx 변환·Packer.toBlob 다운로드) closes #43
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->
-
+- [#23](https://github.com/kimsh153/smartdoc-builder/issues/23) [QA] 용역계약서(한국형) 템플릿 E2E 검증 — 입력→미리보기→PDF 올패스
+- [#37](https://github.com/kimsh153/smartdoc-builder/issues/37) [TASK-024] 템플릿 미리보기/다운로드 A4 페이징 처리 개선 — 연속/페이지 뷰 토글·경계선·PDF 1:1 일치·표/이미지/widow 분할 규칙
+- [#38](https://github.com/kimsh153/smartdoc-builder/issues/38) [BUG] PDF 다운로드 시 A4 페이지 분할 미적용 — `handleDownload()` `@page margin:0` + 페이지브레이크 CSS 부재로 전체 문서 단일 페이지 출력
+- [#39](https://github.com/kimsh153/smartdoc-builder/issues/39) [BUG] 미리보기·다운로드 A4 페이지 분할 미작동 — `preview-panel.tsx` 경계선 없음 + `editor-header.tsx` `window.print()` break-inside 미적용
 ## 🔧 In Progress
 <!-- Dev Agent가 작업 중인 이슈. Dev Agent가 업데이트 -->
 
 ## ⚠️ QA Failed
 <!-- QA FAIL 후 재작업 대기. QA Agent가 업데이트 -->
+
+## 🚫 토큰 절약 규칙 (Claude Agent 필독)
+
+> 이 규칙을 어기면 작업 중단 요청이 올 수 있음.
+
+- **빌드 금지**: `npm run build`, `npx tsc`, `next build` 실행 금지. 코드가 맞으면 빌드 없이 넘어간다.
+- **테스트 실행 금지**: `npm test`, `jest` 실행 금지. 테스트 파일 생성도 불필요하면 하지 않는다.
+- **파일 전체 읽기 금지**: 1000줄 넘는 파일(예: `preview-panel.tsx`)은 `offset`/`limit`으로 필요한 부분만 읽는다.
+- **검증 명령 반복 금지**: 같은 명령을 타임아웃 이유로 여러 번 재시도하지 않는다. 1회 실패 시 다른 방법을 쓴다.
+- **불필요한 파일 읽기 금지**: 수정 대상이 아닌 파일은 Grep으로 필요한 부분만 확인한다.
+- **수정 확인은 Read로**: 수정 후 검증은 해당 부분만 `Read(offset, limit)`으로 확인한다.
 
 ## 📝 주요 결정사항
 - 상태관리: Redux 대신 Zustand v5 선택 (가볍고 persist 미들웨어 내장)
