@@ -4,6 +4,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Document, Template, AIReviewResult, Field, CustomTemplate } from './types'
 import { defaultTemplates } from './templates'
+import { defaultQuotationTemplates } from './quotation/templates'
+import { useQuotationStore } from './quotation/store'
 
 interface DocumentStore {
   // 템플릿
@@ -70,6 +72,10 @@ interface DocumentStore {
   createDocument: (templateId: string) => void
   saveDocument: () => void
   loadDocument: (documentId: string) => void
+  /** 견적서 에디터 → 내 문서 목록에 추가/갱신 */
+  saveQuotationDocument: () => void
+  /** 내 문서에서 견적서 열기 */
+  loadQuotationDocument: (documentId: string) => void
   updateDocumentStatus: (status: Document['status']) => void
   deleteDocument: (documentId: string) => void
 
@@ -257,13 +263,58 @@ export const useDocumentStore = create<DocumentStore>()(
         const { documents, templates } = get()
         const doc = documents.find(d => d.id === documentId)
         if (!doc) return
-        
+
+        if (doc.quotationData) {
+          get().loadQuotationDocument(documentId)
+          return
+        }
+
         const template = templates.find(t => t.id === doc.templateId)
         set({
           currentDocument: doc,
           selectedTemplate: template || null,
           values: doc.values,
           activeSection: template?.sections[0]?.id || null,
+          reviewResult: null,
+        })
+      },
+
+      saveQuotationDocument: () => {
+        const { data, editingDocumentId, activeTemplateId } = useQuotationStore.getState()
+        const tpl =
+          defaultQuotationTemplates.find(t => t.id === activeTemplateId) ?? defaultQuotationTemplates[0]
+        const name = data.clientName?.trim()
+          ? `${data.clientName.trim()} 견적서`
+          : `${tpl.name} · ${new Date().toLocaleDateString('ko-KR')}`
+        const now = new Date().toISOString()
+        const { documents } = get()
+        const existing = editingDocumentId ? documents.find(d => d.id === editingDocumentId) : undefined
+        const doc: Document = {
+          id: editingDocumentId ?? crypto.randomUUID(),
+          templateId: tpl.id,
+          templateName: name,
+          values: {},
+          quotationData: JSON.parse(JSON.stringify(data)),
+          status: existing?.status ?? 'draft',
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        }
+        const idx = documents.findIndex(d => d.id === doc.id)
+        const updatedDocs =
+          idx >= 0 ? documents.map((d, i) => (i === idx ? doc : d)) : [...documents, doc]
+        set({ documents: updatedDocs })
+        useQuotationStore.setState({ editingDocumentId: doc.id, activeTemplateId: doc.templateId })
+      },
+
+      loadQuotationDocument: (documentId) => {
+        const doc = get().documents.find(d => d.id === documentId)
+        if (!doc?.quotationData) return
+        useQuotationStore.getState().loadFromSavedDocument(doc)
+        set({
+          currentDocument: doc,
+          selectedTemplate: null,
+          values: {},
+          activeSection: null,
           reviewResult: null,
         })
       },

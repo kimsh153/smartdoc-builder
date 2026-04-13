@@ -1,5 +1,7 @@
 // 문서 자동화 앱 타입 정의
 
+import type { QuotationData } from './quotation/types'
+
 export type FieldType = 'text' | 'textarea' | 'select' | 'radio' | 'date' | 'number' | 'tel'
 
 /** 조건부 표시 규칙 — fieldId가 value일 때만 이 필드를 표시 */
@@ -62,6 +64,8 @@ export interface Document {
   templateId: string
   templateName: string
   values: Record<string, string>
+  /** 견적서 에디터 전용 스냅샷 (있으면 일반 필드 기반 문서가 아님) */
+  quotationData?: QuotationData
   status: 'draft' | 'reviewed' | 'confirmed'
   createdAt: string
   updatedAt: string

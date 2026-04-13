@@ -8,21 +8,20 @@ import { GroupEditor } from '@/components/quotation/group-editor'
 import { StaffEditor } from '@/components/quotation/staff-editor'
 import { PreviewTable } from '@/components/quotation/preview-table'
 import { useQuotationStore } from '@/lib/quotation/store'
+import { useDocumentStore } from '@/lib/store'
 import { exportToXlsx } from '@/lib/exporters/toXlsx'
 import { toast } from 'sonner'
 
 export default function QuotationEditorPage() {
-  const { data, saveQuotation } = useQuotationStore()
+  const { data } = useQuotationStore()
+  const saveQuotationDocument = useDocumentStore(s => s.saveQuotationDocument)
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const name = data.clientName
-        ? `${data.clientName} 견적서`
-        : `견적서 ${new Date().toLocaleDateString('ko-KR')}`
-      saveQuotation(name)
-      toast.success('견적서가 저장되었습니다.')
+      saveQuotationDocument()
+      toast.success('내 문서에 저장되었습니다.')
     } finally {
       setIsSaving(false)
     }

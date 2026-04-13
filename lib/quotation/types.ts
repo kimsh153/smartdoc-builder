@@ -63,13 +63,6 @@ export interface QuotationData {
   notes: string             // 기타 메모
 }
 
-export interface SavedQuotation {
-  id: string
-  name: string
-  savedAt: string
-  data: QuotationData
-}
-
 // 대시보드 카드용 메타 정보
 export interface QuotationTemplateMeta {
   id: string

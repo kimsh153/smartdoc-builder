@@ -21,7 +21,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
 
   const handleClick = () => {
     loadDocument(document.id)
-    router.push('/editor')
+    router.push(document.quotationData ? '/quotation/editor' : '/editor')
   }
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -36,7 +36,11 @@ export function DocumentCard({ document }: DocumentCardProps) {
     }
   }
 
-  const filledFields = Object.values(document.values).filter(Boolean).length
+  const filledFields = document.quotationData
+    ? document.quotationData.clientName?.trim()
+      ? '고객사 입력됨'
+      : '작성 중'
+    : `${Object.values(document.values).filter(Boolean).length}개 필드 작성됨`
   const status = statusConfig[document.status]
 
   return (
@@ -66,9 +70,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
         <p className="text-sm font-semibold text-foreground leading-snug">{document.templateName}</p>
 
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {filledFields}개 필드 작성됨
-          </span>
+          <span className="text-xs text-muted-foreground">{filledFields}</span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
             {new Date(document.updatedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}

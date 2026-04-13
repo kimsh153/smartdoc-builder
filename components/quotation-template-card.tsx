@@ -11,17 +11,10 @@ interface QuotationTemplateCardProps {
 
 export function QuotationTemplateCard({ template }: QuotationTemplateCardProps) {
   const router = useRouter()
-  const { updateField } = useQuotationStore()
+  const { resetFromTemplate } = useQuotationStore()
 
   const handleSelect = () => {
-    // 기본값 프리셋을 스토어에 반영
-    const d = template.defaultData
-    updateField('overheadRate', d.overheadRate)
-    updateField('profitRate', d.profitRate)
-    updateField('discount', d.discount)
-    updateField('paymentMethod', d.paymentMethod)
-    updateField('hasInterimPayment', d.hasInterimPayment)
-    updateField('billingMethod', d.billingMethod)
+    resetFromTemplate(template)
     router.push('/quotation/editor')
   }
 
