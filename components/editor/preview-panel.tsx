@@ -41,7 +41,8 @@ function renderContent(
       const firstLine = lines[firstNonEmptyIdx].trim()
       if (firstLine.length <= 60 && !firstLine.endsWith('.') && !firstLine.endsWith(',') && !firstLine.startsWith('#')) {
         lines[firstNonEmptyIdx] = `<h1 class="doc-title">${firstLine}</h1>`
-        rendered = lines.join('\n')
+        // 제목 앞 빈 줄 제거 — marked가 <br>로 변환해 제목 위에 공백이 생기는 것을 방지
+        rendered = lines.slice(firstNonEmptyIdx).join('\n')
       }
     }
   }
@@ -274,6 +275,11 @@ function ContractPreview({ content }: { content: string }) {
             text-align: justify;
             word-break: keep-all;
             display: list-item;
+            line-height: 2.1;
+          }
+          #document-preview li::marker {
+            font-size: 10pt;
+            line-height: 2.1;
           }
 
           /* 표 */

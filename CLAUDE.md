@@ -91,6 +91,7 @@ AIReviewResult { score, suggestions: AIReviewSuggestion[] }
 - [TASK-024] A4 페이지 분할 미작동 수정 — preview-panel.tsx repeating-linear-gradient로 297mm 페이지 경계선 시각화(screen only), @media print break-inside:avoid 규칙 추가(doc-article·doc-section·tr·li·doc-signature), editor-header.tsx @page margin:0→10mm 수정, 각 docType별 break-inside 규칙 추가 (a443101) closes #40
 - [TASK-026] PDF 다운로드 레이아웃 붕괴 수정 — editor-header.tsx handleDownload() innerHTML→outerHTML 교체(컨테이너 padding·font·line-height 인라인 스타일 보존), 프린트 창 head에 Noto Sans KR Google Fonts 링크 추가, contract @page margin 10mm→0(컨테이너 28mm 패딩이 여백 담당), @media print box-shadow:none!important 추가 closes #42
 - [TASK-027] 문서 제목 렌더링·A4 다중 페이지 여백·DOCX/Google Docs 다운로드 — preview-panel.tsx renderContent()에 templateName 인수 추가(첫 줄 ≤60자 → `<h1 class="doc-title">` 자동 래핑, 긴 첫 줄 → 템플릿명 prepend fallback), editor-header.tsx @page margin:0→20mm 22mm 20mm 28mm(2페이지+ 상단 여백 보장)·print 시 container padding:0 오버라이드·다운로드 버튼 DropdownMenu(PDF/DOCX/Google Docs), lib/exporters/toDocx.ts 신규(DOM 파싱→Heading1/2/3/Normal docx 변환·Packer.toBlob 다운로드) closes #43
+- [TASK-028] Excel 내보내기 품질 개선 — 템플릿 기반 방식 전환. lib/exporters/toXlsx.ts 전면 재작성(912줄→420줄): 원본 quotation-template.xlsx를 exceljs로 로드 후 스타일 추출(그룹헤더·항목·소계 참조행), 고정 영역(행1-21) 값만 교체(원본 스타일·병합 100% 보존), 동적 영역(행22~) captureSection/restoreSection으로 병합 슬레이브 셀 처리·푸터 이동, 데이터 overflow 시 prepareDynamicArea()로 자동 푸터 이동(병합 오프셋 적용), public/templates/quotation-template.xlsx 추가
 
 ## 📋 Open Issues
 <!-- PM Agent가 생성한 이슈. PM Agent가 업데이트 -->

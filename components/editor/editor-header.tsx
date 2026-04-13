@@ -68,89 +68,102 @@ export function EditorHeader() {
   const getFilename = () =>
     `${selectedTemplate?.name || '문서'}_${new Date().toISOString().slice(0, 10)}`
 
-  const handleDownloadPdf = () => {
-    const element = document.getElementById('document-preview')
-    if (!element) return
+  const handleDownloadPdf = async () => {
+    const previewEl = document.getElementById('document-preview')
+    if (!previewEl) return
 
-    const filename = getFilename()
     const docType = (selectedTemplate as any)?.documentType ?? 'contract'
-
-    // outerHTML로 컨테이너 인라인 스타일(padding·font-family·font-size·line-height) 포함 전체 복사
-    const content = element.outerHTML
-
-    const printWindow = window.open('', '_blank', 'width=1000,height=800')
-    if (!printWindow) {
-      toast.error('팝업이 차단되었습니다. 브라우저 팝업 허용 후 다시 시도해주세요.')
-      return
-    }
-
     const isProposal = docType === 'proposal'
-    const isQuotation = docType === 'quotation'
 
-    const pageStyle = isProposal
-      ? `
-        body { background: #c8c8c8; margin: 0; padding: 24px; }
-        @media print {
-          body { background: #c8c8c8; padding: 0; }
-          #document-preview { box-shadow: none !important; }
-          @page { size: A4 landscape; margin: 10mm; }
-          #document-preview .prop-cover,
-          #document-preview .prop-slide,
-          #document-preview .doc-section { break-inside: avoid; page-break-inside: avoid; }
-          #document-preview tr,
-          #document-preview li { break-inside: avoid; }
-          #document-preview table { break-inside: auto; }
-        }
-      `
-      : isQuotation
-      ? `
-        body { background: #d0d0d0; margin: 0; padding: 24px; display: flex; justify-content: center; }
-        @media print {
-          body { background: white; padding: 0; display: block; }
-          #document-preview { width: 100%; box-shadow: none !important; }
-          @page { size: A4; margin: 10mm; }
-          #document-preview tr,
-          #document-preview li { break-inside: avoid; }
-          #document-preview table { break-inside: auto; }
-        }
-      `
-      : `
-        body { background: #e8e8e8; margin: 0; padding: 24px; display: flex; justify-content: center; }
-        @media print {
-          body { background: white; padding: 0; display: block; }
-          /* @page 여백으로 모든 페이지의 상하좌우 여백 보장 */
-          @page { size: A4; margin: 20mm 22mm 20mm 28mm; }
-          #document-preview { width: 100%; min-height: 0; padding: 0; box-shadow: none !important; }
-          #document-preview .doc-article,
-          #document-preview .doc-section,
-          #document-preview tr,
-          #document-preview li { break-inside: avoid; }
-          #document-preview .doc-signature { break-before: avoid; break-inside: avoid; }
-          #document-preview table { break-inside: auto; }
-        }
-      `
+    toast.loading('PDF 생성 중...', { id: 'pdf-gen' })
 
-    printWindow.document.write(`<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>${filename}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    ${pageStyle}
-  </style>
-</head>
-<body>
-  ${content}
-  <script>
-    document.fonts.ready.then(function() { window.print(); });
-  <\/script>
-</body>
-</html>`)
-    printWindow.document.close()
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      const pageEls = Array.from(previewEl.querySelectorAll<HTMLElement>('.document-preview-page'))
+      if (pageEls.length === 0) return
+
+      const [pdfW, pdfH] = isProposal ? [297, 210] : [210, 297]
+      const pdf = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        orientation: isProposal ? 'landscape' : 'portrait',
+      })
+
+      // Tailwind v4의 oklch/lab 색상을 html2canvas가 파싱 가능한 hex로 변환
+      const fixCss = (css: string) =>
+        css
+          .replace(/oklch\s*\(([^)]*)\)/g, (_, args) => {
+            const L = parseFloat(args.trim().split(/[\s,]+/)[0] ?? '0.5')
+            if (L > 0.93) return '#ffffff'
+            if (L > 0.8)  return '#e5e7eb'
+            if (L > 0.6)  return '#9ca3af'
+            if (L > 0.4)  return '#4b5563'
+            if (L > 0.2)  return '#1f2937'
+            return '#030712'
+          })
+          .replace(/lab\s*\(([^)]*)\)/g, (_, args) => {
+            const L = parseFloat(args.trim().split(/[\s,]+/)[0] ?? '50')
+            if (L > 90) return '#ffffff'
+            if (L > 70) return '#d1d5db'
+            if (L > 50) return '#6b7280'
+            if (L > 30) return '#374151'
+            return '#111827'
+          })
+
+      // 각 미리보기 페이지를 개별 캡처해서 jsPDF 페이지로 추가
+      // → 페이지 분할 로직 불필요, 빈 마지막 페이지 없음
+      for (let i = 0; i < pageEls.length; i++) {
+        const pageEl = pageEls[i]
+        const origShadow = pageEl.style.boxShadow
+        pageEl.style.boxShadow = 'none'
+
+        const canvas = await html2canvas(pageEl, {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          scrollX: 0,
+          scrollY: 0,
+          onclone: async (_doc: Document, clonedEl: HTMLElement) => {
+            const cloneDoc = clonedEl.ownerDocument
+            cloneDoc.querySelectorAll('style').forEach(s => {
+              if (s.textContent) s.textContent = fixCss(s.textContent)
+            })
+            await Promise.all(
+              Array.from(cloneDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+                .map(async link => {
+                  try {
+                    const css = fixCss(await (await fetch(link.href)).text())
+                    const style = cloneDoc.createElement('style')
+                    style.textContent = css
+                    link.replaceWith(style)
+                  } catch { link.remove() }
+                })
+            )
+          },
+        })
+
+        pageEl.style.boxShadow = origShadow
+
+        // canvas는 scale:2로 렌더 → 실제 크기는 절반
+        // 가로를 pdfW(mm)에 맞추고 비율에 따라 높이 계산
+        const imgH = (canvas.height / canvas.width) * pdfW
+        const imgData = canvas.toDataURL('image/jpeg', 0.97)
+
+        if (i > 0) pdf.addPage()
+        // imgH가 pdfH를 초과하면 pdfH로 클리핑 (마지막 페이지는 보통 짧음)
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, Math.min(imgH, pdfH))
+      }
+
+      pdf.save(`${getFilename()}.pdf`)
+      toast.success('PDF가 다운로드되었습니다.', { id: 'pdf-gen' })
+    } catch (e) {
+      console.error(e)
+      toast.error('PDF 생성 중 오류가 발생했습니다.', { id: 'pdf-gen' })
+    }
   }
 
   const handleDownloadDocx = async () => {

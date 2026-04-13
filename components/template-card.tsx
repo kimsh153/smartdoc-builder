@@ -11,10 +11,10 @@ interface TemplateCardProps {
 }
 
 const docTypeConfig: Record<string, { label: string; accent: string; bg: string }> = {
-  contract: { label: '계약서', accent: '#3b82f6', bg: '#eff6ff' },
-  quotation: { label: '견적서', accent: '#10b981', bg: '#ecfdf5' },
-  proposal: { label: '제안서', accent: '#8b5cf6', bg: '#f5f3ff' },
-  'service-contract': { label: '용역계약서', accent: '#3b82f6', bg: '#eff6ff' },
+  contract:         { label: '계약서', accent: '#3b82f6', bg: '#eff6ff' },
+  'service-contract': { label: '계약서', accent: '#3b82f6', bg: '#eff6ff' },
+  quotation:        { label: '견적서', accent: '#10b981', bg: '#ecfdf5' },
+  proposal:         { label: '제안서', accent: '#8b5cf6', bg: '#f5f3ff' },
 }
 
 export function TemplateCard({ template }: TemplateCardProps) {
